@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Port Manager</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 0.95rem;
+    }
+
+    .controls {
+      padding: 1.5rem 2rem;
+      background: #f7f9fc;
+      border-bottom: 1px solid #e1e8ed;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .refresh-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .refresh-btn:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .refresh-btn:active {
+      transform: translateY(0);
+    }
+
+    .table-container {
+      padding: 2rem;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: #f7f9fc;
+    }
+
+    th {
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: #4a5568;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid #e1e8ed;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #e1e8ed;
+      transition: background 0.2s;
+    }
+
+    tbody tr:hover {
+      background: #f7f9fc;
+    }
+
+    td {
+      padding: 1rem;
+      color: #2d3748;
+    }
+
+    .port-cell {
+      font-weight: 600;
+      color: #667eea;
+      font-size: 1.1rem;
+    }
+
+    .port-link {
+      color: inherit;
+      text-decoration: none;
+      display: block;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .port-link:hover {
+      color: #5568d3;
+      text-decoration: underline;
+      transform: translateX(2px);
+    }
+
+    .command-cell {
+      font-family: 'Courier New', monospace;
+      background: #f7f9fc;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      display: inline-block;
+      font-size: 0.9rem;
+    }
+
+    .kill-btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      font-weight: bold;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .kill-btn:hover {
+      background: #dc2626;
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .kill-btn:active {
+      transform: scale(0.95);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: #718096;
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #718096;
+    }
+
+    .spinner {
+      border: 3px solid #e1e8ed;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 1rem;
+      margin: 1rem 2rem;
+      border-radius: 6px;
+      border-left: 4px solid #ef4444;
+    }
+
+    .success {
+      background: #d1fae5;
+      color: #065f46;
+      padding: 1rem;
+      margin: 1rem 2rem;
+      border-radius: 6px;
+      border-left: 4px solid #10b981;
+      animation: fadeOut 3s forwards;
+    }
+
+    @keyframes fadeOut {
+      0%, 70% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Port Manager</h1>
+      <p>View and manage all active ports on your system</p>
+    </div>
+
+    <div class="controls">
+      <div class="status">
+        <div class="status-indicator"></div>
+        <span id="port-count">Loading...</span>
+      </div>
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+          <input type="checkbox" id="auto-refresh-toggle" onchange="toggleAutoRefresh()">
+          <span>Auto-refresh</span>
+        </label>
+        <button class="refresh-btn" onclick="loadPorts()">Refresh</button>
+      </div>
+    </div>
+
+    <div id="message-container"></div>
+
+    <div class="table-container">
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading ports...</p>
+      </div>
+
+      <table id="ports-table" style="display: none;">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>Port</th>
+            <th>PID</th>
+            <th>Project</th>
+            <th style="width: 75px;">Script</th>
+          </tr>
+        </thead>
+        <tbody id="ports-body">
+        </tbody>
+      </table>
+
+      <div id="empty-state" class="empty-state" style="display: none;">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3>No active ports found</h3>
+        <p>There are no processes listening on any ports</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let autoRefreshInterval;
+    let autoRefreshEnabled = false;
+
+    function toggleAutoRefresh() {
+      const checkbox = document.getElementById('auto-refresh-toggle');
+      autoRefreshEnabled = checkbox.checked;
+
+      if (autoRefreshEnabled) {
+        autoRefreshInterval = setInterval(loadPorts, 5000);
+      } else {
+        if (autoRefreshInterval) {
+          clearInterval(autoRefreshInterval);
+          autoRefreshInterval = null;
+        }
+      }
+    }
+
+    async function loadPorts() {
+      const loading = document.getElementById('loading');
+      const table = document.getElementById('ports-table');
+      const emptyState = document.getElementById('empty-state');
+      const portsBody = document.getElementById('ports-body');
+      const portCount = document.getElementById('port-count');
+
+      loading.style.display = 'block';
+      table.style.display = 'none';
+      emptyState.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/ports');
+        const data = await response.json();
+
+        loading.style.display = 'none';
+
+        if (data.ports && data.ports.length > 0) {
+          table.style.display = 'table';
+          portsBody.innerHTML = data.ports.map(port => {
+            const project = port.cwd || '<span style="color: #9ca3af;">N/A</span>';
+            const script = port.fullCommand || '<span style="color: #9ca3af;">N/A</span>';
+
+            return `
+            <tr>
+              <td>
+                <button class="kill-btn" onclick="killProcess(${port.pid}, ${port.port})" title="Kill process">
+                  ×
+                </button>
+              </td>
+              <td class="port-cell"><a href="http://localhost:${port.port}" target="_blank" class="port-link">${port.port}</a></td>
+              <td>${port.pid}</td>
+              <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${port.cwd || 'N/A'}">${project}</td>
+              <td style="width: 75px; word-wrap: break-word; white-space: normal;"><span class="command-cell" style="display: block; white-space: normal;">${script}</span></td>
+            </tr>
+          `;
+          }).join('');
+
+          portCount.textContent = `${data.ports.length} active port${data.ports.length !== 1 ? 's' : ''}`;
+        } else {
+          emptyState.style.display = 'block';
+          portCount.textContent = 'No active ports';
+        }
+      } catch (error) {
+        loading.style.display = 'none';
+        showMessage(`Error loading ports: ${error.message}`, 'error');
+      }
+    }
+
+    async function killProcess(pid, port) {
+      if (!confirm(`Are you sure you want to kill process ${pid} on port ${port}?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/kill/${pid}`, {
+          method: 'POST'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          showMessage(`Successfully killed process ${pid} on port ${port}`, 'success');
+          // Refresh the list after a short delay
+          setTimeout(loadPorts, 500);
+        } else {
+          showMessage(`Failed to kill process: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        showMessage(`Error killing process: ${error.message}`, 'error');
+      }
+    }
+
+    function showMessage(message, type) {
+      const container = document.getElementById('message-container');
+      const div = document.createElement('div');
+      div.className = type;
+      div.textContent = message;
+      container.appendChild(div);
+
+      setTimeout(() => {
+        div.remove();
+      }, 3000);
+    }
+
+    // Load ports on page load
+    loadPorts();
+
+    // Start auto-refresh (enabled by default)
+    if (autoRefreshEnabled) {
+      autoRefreshInterval = setInterval(loadPorts, 5000);
+    }
+  </script>
+</body>
+</html>
